@@ -6,7 +6,7 @@
 ;; Maintainer: James Nguyen <james@jojojames.com>
 ;; URL: https://github.com/jojojames/dired-sidebar
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "25.1") (dired-subtree "0.0.1") (compat "30.0.0.0"))
+;; Package-Requires: ((emacs "25.1") (dired-subtree "0.0.1") (dired-filter "0.0.1") (compat "30.0.0.0"))
 ;; Keywords: dired, files, tools
 ;; HomePage: https://github.com/jojojames/dired-sidebar
 
@@ -37,6 +37,7 @@
 (require 'compat)
 (require 'dired)
 (require 'dired-subtree)
+(require 'dired-filter)
 (eval-when-compile (require 'subr-x)) ; `if-let*' and `when-let*'
 
 (declare-function buffer-face-mode-invoke "face-remap")
@@ -537,6 +538,13 @@ Works around marker pointing to wrong buffer in Emacs 25."
 
   (dired-unadvertise (dired-current-directory))
   (dired-sidebar-update-buffer-name)
+
+  ;; If current directory is under Git version control, ensure that
+  ;; `git-ignored' is included in `dired-filter-stack'.
+  (when  (and (eq (vc-responsible-backend (dired-current-directory) t) 'Git)
+              (not (seq-find (lambda (s) (eq (car s) 'git-ignored)) dired-filter-stack)))
+    (setq-local dired-filter-stack `(,@dired-filter-stack (git-ignored)))
+    (dired-filter-mode +1))
 
   ;; Move setting theme until the end after `dired-sidebar' has set up
   ;; its directory structure.
